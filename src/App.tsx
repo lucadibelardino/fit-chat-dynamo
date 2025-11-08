@@ -14,7 +14,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename="/fit-chat-dynamo/">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/ai-assistant" element={<AIAssistant />} />
