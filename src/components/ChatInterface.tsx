@@ -14,7 +14,7 @@ const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [apiEndpoint, setApiEndpoint] = useState("");
+  const apiEndpoint = import.meta.env.VITE_SUPABASE_EDGE_URL;
   const [showSettings, setShowSettings] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
