@@ -194,11 +194,6 @@ const ChatInterface = () => {
               )}
             </Button>
           </form>
-          {!apiEndpoint && (
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              Configura l'endpoint API per iniziare
-            </p>
-          )}
         </div>
       </Card>
     </div>
