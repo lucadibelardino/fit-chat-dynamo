@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent } from "./ui/card";
-import { Send, Bot, User, Loader2, Settings } from "lucide-react";
+import { Send, Bot, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
@@ -14,8 +15,6 @@ const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [apiEndpoint, setApiEndpoint] = useState(import.meta.env.VITE_SUPABASE_EDGE_URL || "");
-  const [showSettings, setShowSettings] = useState(!import.meta.env.VITE_SUPABASE_EDGE_URL);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -31,15 +30,6 @@ const ChatInterface = () => {
     e.preventDefault();
     
     if (!input.trim()) return;
-    
-    if (!apiEndpoint) {
-      toast({
-        title: "Configurazione richiesta",
-        description: "Configura l'endpoint API prima di iniziare.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     const userMessage: Message = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -47,35 +37,28 @@ const ChatInterface = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(apiEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage],
-        }),
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: { messages: [...messages, userMessage] }
       });
 
-      if (!response.ok) {
-        throw new Error(`Errore API: ${response.status}`);
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.response || data.message || "Risposta non disponibile",
+        content: data.response || "Risposta non disponibile",
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
+      console.error("Chat error:", error);
       toast({
         title: "Errore",
-        description: error instanceof Error ? error.message : "Errore nella comunicazione con l'API",
+        description: error instanceof Error ? error.message : "Errore nella comunicazione con l'assistente",
         variant: "destructive",
       });
       
-      // Remove user message on error
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
@@ -84,38 +67,6 @@ const ChatInterface = () => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Settings Panel */}
-      {showSettings && (
-        <Card className="mb-4 border-primary/50 animate-slide-up">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Settings className="h-5 w-5 text-primary" />
-              <h3 className="font-bold">Configurazione API</h3>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="url"
-                placeholder="https://api.esempio.com/chat"
-                value={apiEndpoint}
-                onChange={(e) => setApiEndpoint(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettings(false)}
-                disabled={!apiEndpoint}
-              >
-                Salva
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Inserisci l'URL del tuo endpoint REST API per l'IA
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Messages Area */}
       <Card className="flex-1 flex flex-col border-border">
         <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -178,14 +129,14 @@ const ChatInterface = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Scrivi un messaggio..."
-              disabled={isLoading || !apiEndpoint}
+              disabled={isLoading}
               className="flex-1"
             />
             <Button
               type="submit"
               variant="hero"
               size="icon"
-              disabled={isLoading || !input.trim() || !apiEndpoint}
+              disabled={isLoading || !input.trim()}
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
