@@ -20,7 +20,7 @@ serve(async (req) => {
 
     console.log("Received chat request with", messages?.length || 0, "messages");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://shiwxksmzbqmzcifdwfu.supabase.co/functions/v1/hyper-service", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
