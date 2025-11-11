@@ -3,11 +3,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
+  // Risposta alla preflight request OPTIONS
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("", { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -50,7 +52,7 @@ serve(async (req) => {
           : "Errore nel servizio AI";
       return new Response(JSON.stringify({ error: msg }), {
         status: response.status === 429 || response.status === 402 ? response.status : 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: corsHeaders,
       });
     }
 
@@ -58,13 +60,13 @@ serve(async (req) => {
     console.log("AI response received successfully");
 
     return new Response(JSON.stringify({ response: data.choices[0].message.content }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: corsHeaders,
     });
   } catch (error) {
     console.error("Error in ai-chat function:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Errore sconosciuto" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: corsHeaders }
     );
   }
 });
